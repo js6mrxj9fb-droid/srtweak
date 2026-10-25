@@ -1,0 +1,22 @@
+name: Build SRTweak dylib
+on:
+  push:
+    paths: ['Tweak.m', '.github/workflows/build.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build arm64 dylib
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          xcrun clang -arch arm64 -dynamiclib -target arm64-apple-ios13.0 \
+            -isysroot "$SDK" -framework UIKit -framework Foundation \
+            -fobjc-arc -O2 -install_name @rpath/SRTweak.dylib \
+            -o SRTweak.dylib Tweak.m
+          otool -l SRTweak.dylib | grep -A2 LC_ID_DYLIB
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SRTweak.dylib
+          path: SRTweak.dylib
