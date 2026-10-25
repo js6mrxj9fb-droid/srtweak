@@ -170,9 +170,9 @@ static IMP overrideVDA(Class cls, IMP newImp) {
 
 // 诊断：每次出现新的 VC 时弹出类名链（只弹一次/类，避免刷屏）
 static NSMutableSet *gSeenVC;
-static void (*origAnyVDA)(id, SEL, BOOL);
+static IMP origAnyVDA = NULL;
 static void hookAnyVDA(id self_, SEL _cmd, BOOL anim) {
-    if (origAnyVDA) origAnyVDA(self_, _cmd, anim);
+    if (origAnyVDA) ((void(*)(id,SEL,BOOL))origAnyVDA)(self_, _cmd, anim);
     if (!gSeenVC) gSeenVC = [NSMutableSet set];
     NSString *cn = NSStringFromClass([self_ class]);
     if ([cn hasPrefix:@"UI"] || [cn hasPrefix:@"_UI"]) return;
