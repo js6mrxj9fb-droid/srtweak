@@ -150,8 +150,22 @@ static void SRTweakConvert(UIViewController *self_) {
 }
 
 static IMP origPanelVDA = NULL, origFPVDA = NULL;
+// 诊断：沿 nextResponder 链列出每一层的类名（[VC] 标记视图控制器）
+static NSString *SRResponderChain(UIResponder *start) {
+    NSMutableString *s = [NSMutableString string];
+    UIResponder *r = start;
+    for (int i = 0; r && i < 14; i++) {
+        NSString *tag = [r isKindOfClass:[UIViewController class]] ? @" [VC]" : @"";
+        [s appendFormat:@"%d %@%@\n", i, NSStringFromClass([r class]), tag];
+        r = r.nextResponder;
+    }
+    return s;
+}
+
 static void hookPanelVDA(id self_, SEL _cmd, BOOL anim) {
     if (origPanelVDA) ((void(*)(id,SEL,BOOL))origPanelVDA)(self_, _cmd, anim);
+    UIViewController *vc = (UIViewController *)self_;
+    SRShowAlert([NSString stringWithFormat:@"段评响应链(view起):\n%@", SRResponderChain(vc.view)], 1.0);
     SRTweakConvert(self_);
 }
 static void hookFPVDA(id self_, SEL _cmd, BOOL anim) {
