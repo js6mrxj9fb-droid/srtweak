@@ -22,6 +22,44 @@ static void TLOG(NSString *fmt, ...) {
     NSLog(@"%@", line);
 }
 
+// ---- 屏幕提示（诊断用，直接看屏幕，不需要读文件） ----
+static UIViewController *SRTopVC(void) {
+    UIWindow *win = nil;
+    for (UIScene *s in [UIApplication sharedApplication].connectedScenes) {
+        if (![s isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *w in ((UIWindowScene *)s).windows) {
+            if (w.isKeyWindow) { win = w; break; }
+        }
+        if (win) break;
+    }
+    UIViewController *vc = win.rootViewController;
+    while (vc.presentedViewController) vc = vc.presentedViewController;
+    return vc;
+}
+
+static void SRShowAlert(NSString *msg, double delaySec) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delaySec * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        UIViewController *top = SRTopVC();
+        if (!top) { TLOG(@"alert skipped, no top vc: %@", msg); return; }
+        UIAlertController *a = [UIAlertController alertControllerWithTitle:@"SRTweak"
+                                                                   message:msg
+                                                            preferredStyle:UIAlertControllerStyleAlert];
+        [a addAction:[UIAlertAction actionWithTitle:@"好" style:UIAlertActionStyleDefault handler:nil]];
+        [top presentViewController:a animated:YES completion:nil];
+    });
+}
+
+static NSString *SRParentChain(UIViewController *vc) {
+    NSMutableString *s = [NSMutableString string];
+    UIViewController *p = vc;
+    for (int i = 0; p && i < 6; i++) {
+        [s appendFormat:@"%@ > ", NSStringFromClass([p class])];
+        p = p.parentViewController;
+    }
+    return s;
+}
+
 static char kConvertedKey;
 
 static UIViewController *SRTweakFindFPHost(UIViewController *vc) {
@@ -133,6 +171,7 @@ __attribute__((constructor))
 static void SRTweakInit(void) {
     @autoreleasepool {
         TLOG(@"BOOT sr_tweak v1 pid=%d", (int)getpid());
+        SRShowAlert(@"插件已加载", 4.0);
         Class panelCls = objc_getClass("_TtC10SourceRead28SRReadCommentPanelController");
         Class fpCls    = objc_getClass("_TtC13FloatingPanel23FloatingPanelController");
         TLOG(@"panelCls=%p fpCls=%p", panelCls, fpCls);
