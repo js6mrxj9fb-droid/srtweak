@@ -140,6 +140,7 @@ static void SRTweakConvert(UIViewController *self_) {
                 }
                 [p presentViewController:self_ animated:YES completion:nil];
                 TLOG(@"presented as system sheet");
+                SRShowAlert(@"段评已换成系统半屏", 0.5);
             });
         };
         if ([NSThread isMainThread]) convert(); else dispatch_async(dispatch_get_main_queue(), convert);
