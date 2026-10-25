@@ -167,6 +167,20 @@ static IMP overrideVDA(Class cls, IMP newImp) {
     return old ? old : superImp; // 若是继承来的，old 为 NULL，回落到父类实现
 }
 
+
+// 诊断：每次出现新的 VC 时弹出类名链（只弹一次/类，避免刷屏）
+static NSMutableSet *gSeenVC;
+static void (*origAnyVDA)(id, SEL, BOOL);
+static void hookAnyVDA(id self_, SEL _cmd, BOOL anim) {
+    if (origAnyVDA) origAnyVDA(self_, _cmd, anim);
+    if (!gSeenVC) gSeenVC = [NSMutableSet set];
+    NSString *cn = NSStringFromClass([self_ class]);
+    if ([cn hasPrefix:@"UI"] || [cn hasPrefix:@"_UI"]) return;
+    if ([gSeenVC containsObject:cn]) return;
+    [gSeenVC addObject:cn];
+    SRShowAlert([NSString stringWithFormat:@"新界面: %@\n%@", cn, SRParentChain(self_)], 0.3);
+}
+
 __attribute__((constructor))
 static void SRTweakInit(void) {
     @autoreleasepool {
@@ -178,6 +192,10 @@ static void SRTweakInit(void) {
         if (panelCls) {
             origPanelVDA = overrideVDA(panelCls, (IMP)hookPanelVDA);
             TLOG(@"panel viewDidAppear overridden orig=%p", origPanelVDA);
+        }
+        {
+            Class ucvc = objc_getClass("UIViewController");
+            origAnyVDA = overrideVDA(ucvc, (IMP)hookAnyVDA);
         }
         if (fpCls) {
             origFPVDA = overrideVDA(fpCls, (IMP)hookFPVDA);
