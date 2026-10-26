@@ -165,7 +165,10 @@ static NSString *SRResponderChain(UIResponder *start) {
 static void hookPanelVDA(id self_, SEL _cmd, BOOL anim) {
     if (origPanelVDA) ((void(*)(id,SEL,BOOL))origPanelVDA)(self_, _cmd, anim);
     UIViewController *vc = (UIViewController *)self_;
-    SRShowAlert([NSString stringWithFormat:@"段评响应链(view起):\n%@", SRResponderChain(vc.view)], 1.0);
+    NSArray *stk = [NSThread callStackSymbols];
+    NSMutableString *t = [NSMutableString string];
+    for (NSUInteger i = 0; i < stk.count && i < 14; i++) [t appendFormat:@"%@\n", stk[i]];
+    SRShowAlert([NSString stringWithFormat:@"段评调用栈:\n%@", t], 1.0);
     SRTweakConvert(self_);
 }
 static void hookFPVDA(id self_, SEL _cmd, BOOL anim) {
